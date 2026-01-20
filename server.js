@@ -74,7 +74,7 @@ app.post('/clips', upload.single('clip'), (req, res) => {
     category: req.body.category,
     tags: req.body.tags,
     uploader: req.body.uploader,
-    videoURL: `http://localhost:${PORT}/uploads/${req.file.filename}`,
+    videoURL: `https://woc1.onrender.com:${PORT}/uploads/${req.file.filename}`,
     views: 0, // Initialize views
     likes: 0,  // Initialize likes
   };
@@ -108,7 +108,7 @@ app.delete('/clips/:id', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running at https://woc1.onrender.com:${PORT}`);
 });
 
 app.post('/clips/:id/interact', (req, res) => {
@@ -150,4 +150,5 @@ app.post('/clips/:id/interact', (req, res) => {
   }
 
 });
+
 
