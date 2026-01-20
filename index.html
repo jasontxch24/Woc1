@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>World Of Clippers</title>
+  <link rel="stylesheet" href="index-style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <header class="navbar">
+    <h1 class="logo">World Of <span>Clippers</span></h1>
+    <nav id="navLinks">
+      <a href="index.html">Home</a>
+      <a href="upload.html">Upload</a>
+      <a href="login.html" id="loginLink">Login</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h2>Welcome to <span>World Of Clippers</span></h2>
+    <button onclick="location.href='upload.html'">Start Posting</button>
+  </section>
+
+  <section class="clips">
+    <h2>Latest Clips</h2>
+    <div class="clip-grid" id="clipGrid"></div>
+  </section>
+
+  <script>
+    const API_URL = "http://localhost:3000";
+    const loggedInUser = localStorage.getItem('loggedInUser');
+
+    function updateNavbar() {
+      const loginLink = document.getElementById('loginLink');
+      if (loggedInUser) {
+        loginLink.textContent = `Logout (${loggedInUser})`;
+        loginLink.href = "#";
+        loginLink.onclick = () => {
+          localStorage.removeItem('loggedInUser');
+          location.reload();
+        };
+      }
+    }
+// Function to send interactions (views/likes) to the server
+async function interact(clipId, type) {
+  try {
+    await fetch(`${API_URL}/clips/${clipId}/interact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type })
+    });
+    // Refresh the list to show updated numbers
+    loadClips();
+  } catch (err) {
+    console.error("Interaction failed", err);
+  }
+}
+async function interact(clipId, type) {
+  // Only logged in people can click like
+  if (type === 'like' && !loggedInUser) {
+    alert("Please login to like this video!");
+    return;
+  }
+
+  try {
+    await fetch(`${API_URL}/clips/${clipId}/interact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, username: loggedInUser }) // Send the username
+    });
+    loadClips(); // Refresh display
+  } catch (err) {
+    console.error("Interaction failed", err);
+  }
+}
+    async function loadClips() {
+      const clipGrid = document.getElementById('clipGrid');
+      try {
+        const res = await fetch(`${API_URL}/clips`);
+        const clips = await res.json();
+        clipGrid.innerHTML = clips.length ? '' : '<p>No clips yet!</p>';
+
+clips.reverse();
+        
+		clips.forEach(clip => {
+          const card = document.createElement('div');
+          card.classList.add('clip-card');
+          card.innerHTML = `
+            <video src="${clip.videoURL}" controls></video>
+            <div class="clip-info">
+              <h3>${clip.title}</h3>
+              <p>Category: ${clip.category}</p>
+              <p>Uploader: ${clip.uploader}</p>
+            </div>
+			<div class="clip-stats" style="display: flex; gap: 15px; margin-top: 10px; font-size: 0.9rem;">
+            <span>👁️ ${clip.views || 0}</span>
+            <span onclick="interact('${clip.id}', 'like')" style="cursor: pointer; color: #00ffcc;">
+              ❤️ ${clip.likes || 0}
+            </span>
+          </div>
+          `;
+
+          if (loggedInUser === clip.uploader) {
+            const delBtn = document.createElement('button');
+            delBtn.textContent = "Delete";
+            delBtn.style.cssText = "background:#ff4d4d; color:white; border:none; padding:5px 10px; cursor:pointer; margin:10px; border-radius:4px;";
+            delBtn.onclick = async () => {
+              await fetch(`${API_URL}/clips/${clip.id}`, { method: 'DELETE' });
+              loadClips();
+            };
+            card.appendChild(delBtn);
+          }
+          clipGrid.appendChild(card);
+        });
+      } catch (err) { console.error("Failed to load clips"); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateNavbar();
+      loadClips();
+    });
+  </script>
+</body>
+</html>
